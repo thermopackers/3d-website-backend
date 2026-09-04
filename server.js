@@ -36,7 +36,7 @@ const allowedOrigins = [
   "http://localhost:3000",
   "https://3d-website-frontend.vercel.app",
   "https://3d-website-frontend.vercel.app/",
-  // Add your custom domain if any
+  "https://threed-printing-backend-yq99.onrender.com",
 ];
 
 app.use(
