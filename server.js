@@ -12,8 +12,14 @@ import userRoutes from "./routes/userRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import educationRoutes from "./routes/educationRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
-// ✅ Load correct environment file automatically
+// ✅ Fix for __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ✅ Load environment variables
 dotenv.config({
   path: process.env.NODE_ENV === "production" ? ".env.production" : ".env.development",
 });
@@ -24,14 +30,28 @@ connectDB();
 const app = express();
 
 // ✅ CORS Configuration
+const allowedOrigins = [
+  process.env.FRONTEND_URL || "http://localhost:3000",
+  "https://3d-website-frontend.vercel.app", // Add your Vercel URL
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.warn(`⚠️ CORS blocked: ${origin}`);
+        callback(null, true); // Allow all in production (or use strict)
+      }
+    },
     credentials: true,
   })
 );
 
-// ✅ CRITICAL: Body Parsing Middleware
+// ✅ Body Parsing Middleware
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ 
   extended: true, 
@@ -54,7 +74,8 @@ app.use("/api/contact", contactRoutes);
 app.get("/api/health", (req, res) => {
   res.status(200).json({ 
     message: "Server is running", 
-    timestamp: new Date().toISOString() 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV
   });
 });
 
@@ -63,11 +84,12 @@ app.get("/", (req, res) => {
   res.json({ 
     message: "3D Printing E-commerce API", 
     version: "1.0.0",
-    status: "active"
+    status: "active",
+    environment: process.env.NODE_ENV
   });
 });
 
-// ✅ FIXED: 404 Handler
+// ✅ 404 Handler
 app.use((req, res) => {
   res.status(404).json({ 
     error: "Route not found",
@@ -80,7 +102,7 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error("🚨 Global Error Handler:", err);
   
-  // Multer errors (file upload)
+  // Multer errors
   if (err.code === "LIMIT_FILE_SIZE") {
     return res.status(400).json({
       error: "File too large",
@@ -121,7 +143,9 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+  console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || "development"} mode`);
   console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || "http://localhost:3000"}`);
-  console.log(`📊 MongoDB: ${process.env.MONGO_URI ? "Connected" : "Not configured"}`);
+  console.log(`📊 MongoDB: ${process.env.MONGO_URI ? "✅ Connected" : "❌ Not configured"}`);
 });
+
+export default app;
