@@ -29,25 +29,36 @@ connectDB();
 
 const app = express();
 
-// ✅ CORS Configuration
+// ✅ CORS Configuration - FIXED
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:3000",
-  "https://3d-website-frontend.vercel.app", // Add your Vercel URL
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://3d-website-frontend.vercel.app",
+  "https://3d-website-frontend.vercel.app/",
+  // Add your custom domain if any
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
       // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        return callback(null, true);
+      }
+      
+      // Check if origin is allowed
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
         console.warn(`⚠️ CORS blocked: ${origin}`);
-        callback(null, true); // Allow all in production (or use strict)
+        // For production, you can allow all origins temporarily
+        callback(null, true); // Remove this in production for security
       }
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
   })
 );
 
